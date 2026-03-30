@@ -588,7 +588,6 @@ export default function OrganizerDetailPage() {
                     onChange={(e) => changeRole(e.target.value)}
                   >
                     <option value="ORGANIZER">ORGANIZER</option>
-                    <option value="CLUB_OWNER">CLUB_OWNER</option>
                     <option value="ATTENDEE">ATTENDEE</option>
                   </select>
                 </div>

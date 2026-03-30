@@ -44,7 +44,7 @@ export default function LoginPage() {
     try {
       const response = await authApi.login(data.email, data.password);
       const result = unwrap<LoginResponse>(response);
-      const adminRoles = ["ADMIN", "SUPER_ADMIN", "ORGANIZER", "CLUB_OWNER"];
+      const adminRoles = ["ADMIN", "SUPER_ADMIN", "ORGANIZER"];
       if (!adminRoles.includes(result.user.role)) {
         setError("Access denied. Admin or Organizer role required.");
         return;

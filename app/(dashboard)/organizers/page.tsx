@@ -43,7 +43,6 @@ const PAGE_SIZE = 20;
 
 const ROLE_BADGE: Record<string, string> = {
   ORGANIZER: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  CLUB_OWNER: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
 };
 
 export default function OrganizersPage() {
@@ -389,7 +388,6 @@ export default function OrganizersPage() {
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   <SelectItem value="ORGANIZER">Organizer — event management</SelectItem>
-                  <SelectItem value="CLUB_OWNER">Club Owner — venue + recurring nights</SelectItem>
                 </SelectContent>
               </Select>
             </div>

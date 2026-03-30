@@ -1,4 +1,4 @@
-export type UserRole = "ATTENDEE" | "ORGANIZER" | "CLUB_OWNER" | "GATE_STAFF" | "ADMIN" | "SUPER_ADMIN";
+export type UserRole = "ATTENDEE" | "ORGANIZER" | "GATE_STAFF" | "ADMIN" | "SUPER_ADMIN";
 export type LoyaltyTier = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND";
 export type EventStatus = "DRAFT" | "PUBLISHED" | "PRESALE" | "SOLD_OUT" | "ONGOING" | "POSTPONED" | "CANCELLED" | "PAST";
 export type EventCategory = "CLUB_NIGHT" | "FESTIVAL" | "CONCERT" | "COMEDY" | "SPORTS" | "CORPORATE" | "PRIVATE" | "POP_UP" | "BOAT_PARTY" | "ROOFTOP";

@@ -20,7 +20,6 @@ const ROLES: { value: string; label: string }[] = [
   { value: "ALL", label: "All Roles" },
   { value: "ATTENDEE", label: "Attendee" },
   { value: "ORGANIZER", label: "Organizer" },
-  { value: "CLUB_OWNER", label: "Club Owner" },
   { value: "GATE_STAFF", label: "Gate Staff" },
   { value: "ADMIN", label: "Admin" },
 ];

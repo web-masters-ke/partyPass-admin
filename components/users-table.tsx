@@ -27,7 +27,6 @@ function RoleBadge({ role }: { role: UserRole }) {
     ADMIN: "admin",
     SUPER_ADMIN: "admin",
     ORGANIZER: "organizer",
-    CLUB_OWNER: "organizer",
     ATTENDEE: "attendee",
     GATE_STAFF: "default",
   };
