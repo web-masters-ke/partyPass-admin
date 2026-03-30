@@ -9,6 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "PartyPass Admin",
   description: "PartyPass Event Management Admin Dashboard",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
