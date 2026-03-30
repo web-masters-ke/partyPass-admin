@@ -21,6 +21,9 @@ import {
   Star,
   Clock,
   CreditCard,
+  Store,
+  DoorOpen,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,9 +36,11 @@ const navItems = [
   { href: "/organizers", label: "Organizers", icon: Users2 },
   { href: "/orders", label: "Orders", icon: ShoppingCart },
   { href: "/finances", label: "Finances", icon: DollarSign },
-  { href: "/wallets", label: "User Wallets", icon: Users2 },
+  { href: "/wallets", label: "User Wallets", icon: Wallet },
   { href: "/waitlist", label: "Waitlist", icon: Clock },
+  { href: "/waiting-room", label: "Waiting Room", icon: DoorOpen },
   { href: "/wristbands", label: "Wristbands", icon: CreditCard },
+  { href: "/venue-portal", label: "Venue Portal", icon: Store },
   { href: "/loyalty", label: "Loyalty", icon: Award },
   { href: "/rewards", label: "Rewards", icon: Gift },
   { href: "/notifications", label: "Notifications", icon: Bell },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   CalendarDays,
@@ -11,7 +11,11 @@ import {
   BarChart2,
   Edit,
   CheckCircle,
+  Globe,
+  XCircle,
+  Trash2,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const TIER_TYPE_LABELS: Record<string, string> = {
   GA: "General Admission",
@@ -34,8 +38,48 @@ import type { Event } from "@/lib/types";
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState(false);
+
+  async function publish() {
+    setActing(true);
+    try {
+      await eventsApi.publish(id);
+      toast.success("Event published");
+      const res = await eventsApi.get(id);
+      setEvent(unwrap<Event>(res));
+    } catch (e: unknown) {
+      toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed");
+    } finally { setActing(false); }
+  }
+
+  async function cancel() {
+    if (!confirm("Cancel this event?")) return;
+    setActing(true);
+    try {
+      await eventsApi.cancel(id);
+      toast.success("Event cancelled");
+      const res = await eventsApi.get(id);
+      setEvent(unwrap<Event>(res));
+    } catch (e: unknown) {
+      toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed");
+    } finally { setActing(false); }
+  }
+
+  async function deleteEvent() {
+    if (!confirm("Permanently delete this event?")) return;
+    setActing(true);
+    try {
+      await eventsApi.delete(id);
+      toast.success("Event deleted");
+      router.push("/events");
+    } catch (e: unknown) {
+      toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed");
+      setActing(false);
+    }
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -142,12 +186,36 @@ export default function EventDetailPage() {
               Analytics
             </Link>
           </Button>
+          {(event.status === "DRAFT" || event.status === "PRESALE") && (
+            <Button size="sm" disabled={acting}
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={publish}>
+              <Globe className="mr-2 h-4 w-4" />
+              Publish
+            </Button>
+          )}
           {(event.status === "ONGOING" || event.status === "PUBLISHED") && (
             <Button asChild size="sm">
               <Link href={`/events/${id}/gate`}>
                 <Radio className="mr-2 h-4 w-4" />
                 Gate Live
               </Link>
+            </Button>
+          )}
+          {(event.status === "PUBLISHED" || event.status === "ONGOING" || event.status === "PRESALE") && (
+            <Button size="sm" variant="outline" disabled={acting}
+              className="text-yellow-700 border-yellow-300 hover:bg-yellow-50"
+              onClick={cancel}>
+              <XCircle className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+          )}
+          {(event.status === "DRAFT" || event.status === "CANCELLED") && (
+            <Button size="sm" variant="outline" disabled={acting}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+              onClick={deleteEvent}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
             </Button>
           )}
         </div>

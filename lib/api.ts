@@ -76,6 +76,7 @@ export const eventsApi = {
   create: (data: Record<string, unknown>) => api.post("/events", data),
   update: (id: string, data: Record<string, unknown>) =>
     api.patch(`/events/${id}`, data),
+  delete: (id: string) => api.delete(`/events/${id}`),
   publish: (id: string) => api.post(`/events/${id}/publish`),
   cancel: (id: string) => api.post(`/events/${id}/cancel`),
   attendees: (id: string, params?: Record<string, unknown>) =>

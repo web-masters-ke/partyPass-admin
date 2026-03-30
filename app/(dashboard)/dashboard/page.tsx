@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   Users, CalendarDays, DollarSign, Radio, RefreshCw,
-  TrendingUp, TrendingDown, Ticket, Star,
+  TrendingUp, TrendingDown, Ticket,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, ComposedChart,
@@ -13,12 +13,10 @@ import {
   RadialBarChart, RadialBar,
   Treemap,
 } from "recharts";
-import { EventsTable } from "@/components/events-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { analyticsApi, eventsApi, unwrap } from "@/lib/api";
+import { analyticsApi, unwrap } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-import type { DashboardStats, Event } from "@/lib/types";
 
 // ─── Colors ────────────────────────────────────────────────────────────────
 const PRIMARY = "#D93B2F";
@@ -31,7 +29,7 @@ const TIER_COLORS: Record<string, string> = {
   SILVER: "#C0C0C0", BRONZE: "#CD7F32",
 };
 
-// ─── Deterministic mock data ───────────────────────────────────────────────
+// ─── Static charts (platform patterns — don't change per-refresh) ──────────
 function makeSalesData() {
   const seed = [110, 95, 130, 80, 160, 210, 175, 140, 100, 120,
     90, 185, 230, 195, 160, 145, 200, 250, 220, 180,
@@ -45,25 +43,7 @@ function makeSalesData() {
   }));
 }
 
-const mockStats: DashboardStats = {
-  totalUsers: 14_382,
-  totalEvents: 267,
-  totalRevenue: 5_420_800,
-  activeEvents: 9,
-  userGrowth: 14,
-  revenueGrowth: 11,
-  salesData: makeSalesData(),
-  categoryBreakdown: [
-    { category: "Club Night", count: 98,  value: 98  },
-    { category: "Festival",   count: 41,  value: 41  },
-    { category: "Concert",    count: 62,  value: 62  },
-    { category: "Comedy",     count: 24,  value: 24  },
-    { category: "Boat Party", count: 18,  value: 18  },
-    { category: "Rooftop",    count: 14,  value: 14  },
-    { category: "Corporate",  count: 10,  value: 10  },
-  ],
-  recentEvents: [],
-};
+const staticSalesData = makeSalesData();
 
 const dayOfWeekData = [
   { day: "Mon", tickets: 420, revenue: 198_000, fill: "#3B82F6" },
@@ -107,49 +87,34 @@ const loyaltyTierData = [
   { name: "BRONZE",   count: 6832,  pct: 47, fill: TIER_COLORS.BRONZE },
 ];
 
-const topEvents = [
-  { title: "Afrobeats Safari Vol. 9",   sold: 1840, capacity: 2000, revenue: 882_000 },
-  { title: "Nairobi Jazz Fest",          sold: 3200, capacity: 4000, revenue: 1_536_000 },
-  { title: "Savage Garden Rooftop",     sold: 490,  capacity: 500,  revenue: 294_000 },
-  { title: "Comedy Warehouse Night",    sold: 310,  capacity: 350,  revenue: 124_000 },
-  { title: "Kizomba Boat Party VII",    sold: 175,  capacity: 200,  revenue: 210_000 },
-];
+// ─── Types ─────────────────────────────────────────────────────────────────
+interface PlatformAnalytics {
+  totals: {
+    users: number;
+    events: number;
+    activeEvents: number;
+    ticketsSold: number;
+    revenue: number | string;
+    newUsersThisMonth: number;
+  };
+  revenueData: { month: string; revenue: number }[];
+}
 
-const treemapData = [
-  { name: "Club Night", size: 873_600, color: "#D93B2F" },
-  { name: "Festival",   size: 1_536_000, color: "#F59E0B" },
-  { name: "Concert",    size: 620_000, color: "#22C55E" },
-  { name: "Comedy",     size: 248_000, color: "#3B82F6" },
-  { name: "Boat Party", size: 210_000, color: "#8B5CF6" },
-  { name: "Rooftop",    size: 182_000, color: "#EC4899" },
-  { name: "Corporate",  size: 140_000, color: "#14B8A6" },
-];
+interface TopEvent {
+  eventId: string;
+  title: string;
+  orders: number;
+  revenue: number;
+}
 
-const mockEvents: Event[] = [
-  {
-    id: "1", organizerId: "u1", title: "Afro Fridays Vol. 12",
-    description: "", category: "CLUB_NIGHT", genreTags: [], status: "ONGOING",
-    startDateTime: new Date().toISOString(), endDateTime: new Date().toISOString(),
-    timezone: "Africa/Nairobi", maxCapacity: 500, isPrivate: false, isOnline: false,
-    isRecurring: true, createdAt: new Date().toISOString(), ticketsSold: 423, totalRevenue: 211_500,
-  },
-  {
-    id: "2", organizerId: "u2", title: "Nairobi Jazz Festival",
-    description: "", category: "FESTIVAL", genreTags: [], status: "PUBLISHED",
-    startDateTime: new Date(Date.now() + 7 * 86400000).toISOString(),
-    endDateTime: new Date(Date.now() + 7 * 86400000).toISOString(),
-    timezone: "Africa/Nairobi", maxCapacity: 2000, isPrivate: false, isOnline: false,
-    isRecurring: false, createdAt: new Date().toISOString(), ticketsSold: 1234, totalRevenue: 987_200,
-  },
-  {
-    id: "3", organizerId: "u3", title: "Savage Garden Rooftop",
-    description: "", category: "ROOFTOP", genreTags: [], status: "PUBLISHED",
-    startDateTime: new Date(Date.now() + 3 * 86400000).toISOString(),
-    endDateTime: new Date(Date.now() + 3 * 86400000).toISOString(),
-    timezone: "Africa/Nairobi", maxCapacity: 500, isPrivate: false, isOnline: false,
-    isRecurring: false, createdAt: new Date().toISOString(), ticketsSold: 490, totalRevenue: 294_000,
-  },
-];
+interface RecentOrder {
+  id: string;
+  total: number;
+  status: string;
+  paidAt?: string;
+  user?: { firstName: string; lastName: string; email?: string };
+  event?: { title: string };
+}
 
 // ─── Custom tooltip ────────────────────────────────────────────────────────
 const CustomTooltip = ({
@@ -206,12 +171,13 @@ function TreemapBlock(props: {
   );
 }
 
-// ─── Stat card with mini sparkline ────────────────────────────────────────
+// ─── KPI card ─────────────────────────────────────────────────────────────
 function KpiCard({
-  title, value, change, icon: Icon, iconBg, iconColor, sparkData, sparkKey,
+  title, value, sub, change, icon: Icon, iconBg, iconColor, sparkData, sparkKey,
 }: {
   title: string;
   value: string | number;
+  sub?: string;
   change?: number;
   icon: React.ElementType;
   iconBg: string;
@@ -238,6 +204,7 @@ function KpiCard({
         </div>
         <p className="text-2xl font-black text-gray-900 dark:text-gray-100 leading-tight">{value}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{title}</p>
+        {sub && <p className="text-[11px] text-gray-400 mt-0.5">{sub}</p>}
         {sparkData && (
           <div className="mt-3 -mx-1">
             <ResponsiveContainer width="100%" height={36}>
@@ -248,15 +215,8 @@ function KpiCard({
                     <stop offset="95%" stopColor={PRIMARY} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <Area
-                  type="monotone"
-                  dataKey="v"
-                  stroke={PRIMARY}
-                  strokeWidth={1.5}
-                  fill={`url(#spark-${sparkKey})`}
-                  dot={false}
-                  isAnimationActive={false}
-                />
+                <Area type="monotone" dataKey="v" stroke={PRIMARY} strokeWidth={1.5}
+                  fill={`url(#spark-${sparkKey})`} dot={false} isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -266,35 +226,77 @@ function KpiCard({
   );
 }
 
+function fmtRelative(d?: string) {
+  if (!d) return "—";
+  try {
+    const diff = Date.now() - new Date(d).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  } catch { return "—"; }
+}
+
+const TOKEN_KEY = "partypass_token";
+function getToken() {
+  return typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) ?? "" : "";
+}
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+
+async function fetchJson(path: string) {
+  const res = await fetch(`${API}${path}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  return res.json();
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats>(mockStats);
-  const [recentEvents, setRecentEvents] = useState<Event[]>(mockEvents);
+  const [analytics, setAnalytics] = useState<PlatformAnalytics | null>(null);
+  const [topEvents, setTopEvents] = useState<TopEvent[]>([]);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [categoryBreakdown, setCategoryBreakdown] = useState<{ category: string; count: number; value: number }[]>([]);
+  const [treemapData, setTreemapData] = useState<{ name: string; size: number; color: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [analyticsRes, eventsRes] = await Promise.all([
+      const [analyticsRes, dashboardJson, platformJson] = await Promise.all([
         analyticsApi.dashboard(),
-        eventsApi.list({ limit: 5, sort: "createdAt", order: "desc" }),
+        fetchJson("/admin/dashboard").catch(() => null),
+        fetchJson("/analytics/platform").catch(() => null),
       ]);
-      const raw = unwrap<{
-        totals?: { users?: number; events?: number; activeEvents?: number; revenue?: number };
-        revenueData?: { date: string; amount: number }[];
-      }>(analyticsRes);
-      setStats({
-        ...mockStats,
-        totalUsers: raw.totals?.users ?? mockStats.totalUsers,
-        totalEvents: raw.totals?.events ?? mockStats.totalEvents,
-        totalRevenue: raw.totals?.revenue ?? mockStats.totalRevenue,
-        activeEvents: raw.totals?.activeEvents ?? mockStats.activeEvents,
-      });
-      const eventsData = unwrap<{ items?: Event[] }>(eventsRes);
-      setRecentEvents(eventsData.items ?? mockEvents);
+
+      const a = unwrap<PlatformAnalytics>(analyticsRes);
+      setAnalytics(a);
+
+      if (dashboardJson?.data?.recentOrders) {
+        setRecentOrders(dashboardJson.data.recentOrders);
+      }
+
+      if (platformJson?.data?.topEvents) {
+        const evts: TopEvent[] = platformJson.data.topEvents;
+        setTopEvents(evts);
+        // Build treemap from top events
+        setTreemapData(evts.slice(0, 7).map((e, i) => ({
+          name: e.title.length > 20 ? e.title.slice(0, 18) + "…" : e.title,
+          size: e.revenue,
+          color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+        })));
+      }
+
+      // Category breakdown from totals
+      if (a?.totals) {
+        setCategoryBreakdown([
+          { category: "Active",    count: a.totals.activeEvents,  value: a.totals.activeEvents },
+          { category: "Upcoming",  count: 0, value: 0 },
+          { category: "All",       count: a.totals.events,        value: a.totals.events },
+        ].filter((d) => d.value > 0));
+      }
     } catch {
-      setStats(mockStats);
-      setRecentEvents(mockEvents);
+      // keep nulls
     } finally {
       setLoading(false);
     }
@@ -302,8 +304,57 @@ export default function DashboardPage() {
 
   useEffect(() => { loadData(); }, []);
 
-  const revenueSparkData = stats.salesData.slice(-14).map((d) => ({ v: d.revenue }));
-  const salesSparkData   = stats.salesData.slice(-14).map((d) => ({ v: d.sales }));
+  const totalUsers   = analytics?.totals?.users ?? 0;
+  const totalEvents  = analytics?.totals?.events ?? 0;
+  const activeEvents = analytics?.totals?.activeEvents ?? 0;
+  const ticketsSold  = analytics?.totals?.ticketsSold ?? 0;
+  const totalRevenue = Number(analytics?.totals?.revenue ?? 0);
+  const newThisMonth = analytics?.totals?.newUsersThisMonth ?? 0;
+
+  // Use real revenue data for combo chart if available, else static
+  const salesChartData = (() => {
+    const rd = analytics?.revenueData ?? [];
+    if (rd.length > 0) {
+      return rd.map((d) => ({ date: d.month, sales: 0, revenue: d.revenue, returning: 0 }));
+    }
+    return staticSalesData;
+  })();
+
+  const revenueSparkData = salesChartData.slice(-14).map((d) => ({ v: d.revenue }));
+  const salesSparkData   = staticSalesData.slice(-14).map((d) => ({ v: d.sales }));
+
+  // Category donut — use real data if we have it, else static
+  const categoryDonutData = categoryBreakdown.length > 0 ? categoryBreakdown : [
+    { category: "Club Night", count: 98,  value: 98  },
+    { category: "Festival",   count: 41,  value: 41  },
+    { category: "Concert",    count: 62,  value: 62  },
+    { category: "Comedy",     count: 24,  value: 24  },
+    { category: "Boat Party", count: 18,  value: 18  },
+    { category: "Rooftop",    count: 14,  value: 14  },
+    { category: "Corporate",  count: 10,  value: 10  },
+  ];
+
+  // Treemap — real if available, else static
+  const treemapDisplay = treemapData.length > 0 ? treemapData : [
+    { name: "Club Night", size: 873_600,   color: "#D93B2F" },
+    { name: "Festival",   size: 1_536_000, color: "#F59E0B" },
+    { name: "Concert",    size: 620_000,   color: "#22C55E" },
+    { name: "Comedy",     size: 248_000,   color: "#3B82F6" },
+    { name: "Boat Party", size: 210_000,   color: "#8B5CF6" },
+    { name: "Rooftop",    size: 182_000,   color: "#EC4899" },
+    { name: "Corporate",  size: 140_000,   color: "#14B8A6" },
+  ];
+
+  // Top events — real if available, else static
+  const topEventsDisplay = topEvents.length > 0 ? topEvents.map((e) => ({
+    title: e.title, sold: e.orders, capacity: e.orders, revenue: e.revenue,
+  })) : [
+    { title: "Afrobeats Safari Vol. 9",   sold: 1840, capacity: 2000, revenue: 882_000 },
+    { title: "Nairobi Jazz Fest",          sold: 3200, capacity: 4000, revenue: 1_536_000 },
+    { title: "Savage Garden Rooftop",     sold: 490,  capacity: 500,  revenue: 294_000 },
+    { title: "Comedy Warehouse Night",    sold: 310,  capacity: 350,  revenue: 124_000 },
+    { title: "Kizomba Boat Party VII",    sold: 175,  capacity: 200,  revenue: 210_000 },
+  ];
 
   return (
     <div className="space-y-6">
@@ -311,7 +362,9 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Analytics Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Platform performance · Last 30 days</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Platform performance · {new Date().toLocaleDateString("en-KE", { dateStyle: "long" })}
+          </p>
         </div>
         <Button variant="outline" size="sm" onClick={loadData} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -323,8 +376,8 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           title="Total Users"
-          value={stats.totalUsers.toLocaleString()}
-          change={stats.userGrowth}
+          value={loading ? "—" : totalUsers.toLocaleString()}
+          sub={newThisMonth > 0 ? `+${newThisMonth.toLocaleString()} this month` : undefined}
           icon={Users}
           iconBg="bg-blue-50 dark:bg-blue-950/40"
           iconColor="text-blue-600"
@@ -333,7 +386,8 @@ export default function DashboardPage() {
         />
         <KpiCard
           title="Total Events"
-          value={stats.totalEvents.toLocaleString()}
+          value={loading ? "—" : totalEvents.toLocaleString()}
+          sub={activeEvents > 0 ? `${activeEvents} live now` : undefined}
           icon={CalendarDays}
           iconBg="bg-purple-50 dark:bg-purple-950/40"
           iconColor="text-purple-600"
@@ -342,8 +396,7 @@ export default function DashboardPage() {
         />
         <KpiCard
           title="Total Revenue"
-          value={formatCurrency(stats.totalRevenue)}
-          change={stats.revenueGrowth}
+          value={loading ? "—" : formatCurrency(totalRevenue)}
           icon={DollarSign}
           iconBg="bg-green-50 dark:bg-green-950/40"
           iconColor="text-green-600"
@@ -351,9 +404,10 @@ export default function DashboardPage() {
           sparkKey="revenue"
         />
         <KpiCard
-          title="Active Events"
-          value={stats.activeEvents}
-          icon={Radio}
+          title="Tickets Sold"
+          value={loading ? "—" : ticketsSold.toLocaleString()}
+          sub={activeEvents > 0 ? `${activeEvents} active event${activeEvents !== 1 ? "s" : ""}` : undefined}
+          icon={loading ? Radio : Ticket}
           iconBg="bg-red-50 dark:bg-red-950/40"
           iconColor="text-[#D93B2F]"
           sparkData={salesSparkData}
@@ -370,7 +424,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
-              <ComposedChart data={stats.salesData} margin={{ top: 4, right: 12, bottom: 0, left: -10 }}>
+              <ComposedChart data={salesChartData} margin={{ top: 4, right: 12, bottom: 0, left: -10 }}>
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%"  stopColor="#22C55E" stopOpacity={0.15} />
@@ -394,32 +448,20 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Events by Category</CardTitle>
-            <CardDescription className="text-xs">Share of {stats.totalEvents} events</CardDescription>
+            <CardDescription className="text-xs">Share of {loading ? "…" : totalEvents.toLocaleString()} events</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
-                <Pie
-                  data={stats.categoryBreakdown}
-                  cx="50%"
-                  cy="44%"
-                  innerRadius={52}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  nameKey="category"
-                >
-                  {stats.categoryBreakdown.map((_, i) => (
+                <Pie data={categoryDonutData} cx="50%" cy="44%"
+                  innerRadius={52} outerRadius={80} paddingAngle={2}
+                  dataKey="value" nameKey="category">
+                  {categoryDonutData.map((_, i) => (
                     <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} stroke="none" />
                   ))}
                 </Pie>
-                <Legend
-                  iconType="circle"
-                  iconSize={7}
-                  formatter={(v) => (
-                    <span style={{ fontSize: 10, color: "#6B7280" }}>{v}</span>
-                  )}
-                />
+                <Legend iconType="circle" iconSize={7}
+                  formatter={(v) => <span style={{ fontSize: 10, color: "#6B7280" }}>{v}</span>} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E5E7EB" }} />
               </PieChart>
             </ResponsiveContainer>
@@ -427,7 +469,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* ── Row 3: User growth stacked area | Day-of-week performance ── */}
+      {/* ── Row 3: User growth stacked area | Day-of-week ────────────── */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
@@ -485,7 +527,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* ── Row 4: Platform health radar | Loyalty tier radial | Revenue treemap ── */}
+      {/* ── Row 4: Radar | Loyalty radial | Treemap ──────────────────── */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
@@ -508,38 +550,23 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Loyalty Tier Distribution</CardTitle>
-            <CardDescription className="text-xs">{stats.totalUsers.toLocaleString()} enrolled users</CardDescription>
+            <CardDescription className="text-xs">{loading ? "…" : totalUsers.toLocaleString()} enrolled users</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <RadialBarChart
-                cx="50%" cy="50%"
-                innerRadius={20} outerRadius={90}
-                barSize={14}
-                data={loyaltyTierData}
-                startAngle={180} endAngle={-180}
-              >
+              <RadialBarChart cx="50%" cy="50%" innerRadius={20} outerRadius={90}
+                barSize={14} data={loyaltyTierData} startAngle={180} endAngle={-180}>
                 <RadialBar dataKey="count" background={{ fill: "rgba(156,163,175,0.08)" }} cornerRadius={4}>
-                  {loyaltyTierData.map((d, i) => (
-                    <Cell key={i} fill={d.fill} />
-                  ))}
+                  {loyaltyTierData.map((d, i) => <Cell key={i} fill={d.fill} />)}
                 </RadialBar>
-                <Legend
-                  iconType="circle"
-                  iconSize={7}
+                <Legend iconType="circle" iconSize={7}
                   formatter={(v) => {
                     const item = loyaltyTierData.find((d) => d.name === v);
-                    return (
-                      <span style={{ fontSize: 10, color: "#6B7280" }}>
-                        {v} ({item?.pct}%)
-                      </span>
-                    );
+                    return <span style={{ fontSize: 10, color: "#6B7280" }}>{v} ({item?.pct}%)</span>;
                   }}
                 />
-                <Tooltip
-                  formatter={(v, n) => [Number(v).toLocaleString() + " users", n]}
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E5E7EB" }}
-                />
+                <Tooltip formatter={(v, n) => [Number(v).toLocaleString() + " users", n]}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E5E7EB" }} />
               </RadialBarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -548,17 +575,14 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Revenue Treemap</CardTitle>
-            <CardDescription className="text-xs">Area proportional to revenue by category</CardDescription>
+            <CardDescription className="text-xs">
+              {treemapData.length > 0 ? "Top events by revenue" : "Area proportional to revenue by category"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <Treemap
-                data={treemapData}
-                dataKey="size"
-                aspectRatio={4 / 3}
-                stroke="#fff"
-                content={<TreemapBlock data={treemapData} />}
-              />
+              <Treemap data={treemapDisplay} dataKey="size" aspectRatio={4 / 3} stroke="#fff"
+                content={<TreemapBlock data={treemapDisplay} />} />
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -568,12 +592,16 @@ export default function DashboardPage() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Top 5 Events by Revenue</CardTitle>
-          <CardDescription className="text-xs">Ticket fill rate shown as secondary bar</CardDescription>
+          <CardDescription className="text-xs">
+            {topEvents.length > 0 ? "Live data · paid orders" : "Ticket fill rate shown as secondary bar"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {topEvents.map((ev, i) => {
-              const fillPct = Math.round((ev.sold / ev.capacity) * 100);
+            {topEventsDisplay.slice(0, 5).map((ev, i) => {
+              const fillPct = ev.capacity > 0 ? Math.round((ev.sold / ev.capacity) * 100) : 100;
+              const maxRevenue = topEventsDisplay[0]?.revenue || 1;
+              const pct = Math.round((ev.revenue / maxRevenue) * 100);
               return (
                 <div key={i} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
@@ -585,15 +613,17 @@ export default function DashboardPage() {
                       <span className="truncate font-medium text-gray-800 dark:text-gray-200">{ev.title}</span>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-2 text-xs">
-                      <span className="text-gray-500">{ev.sold.toLocaleString()} / {ev.capacity.toLocaleString()}</span>
+                      <span className="text-gray-500">{ev.sold.toLocaleString()} tickets</span>
                       <span className="font-bold text-gray-900 dark:text-gray-100">KES {(ev.revenue / 1000).toFixed(0)}k</span>
                     </div>
                   </div>
                   <div className="relative h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                     <div className="absolute inset-y-0 left-0 rounded-full"
-                      style={{ width: `${fillPct}%`, background: CATEGORY_COLORS[i] }} />
+                      style={{ width: `${topEvents.length > 0 ? pct : fillPct}%`, background: CATEGORY_COLORS[i] }} />
                   </div>
-                  <p className="text-[10px] text-gray-400">{fillPct}% capacity filled</p>
+                  <p className="text-[10px] text-gray-400">
+                    {topEvents.length > 0 ? `${pct}% of top revenue` : `${fillPct}% capacity filled`}
+                  </p>
                 </div>
               );
             })}
@@ -601,16 +631,59 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* ── Row 6: Recent events table ───────────────────────────────── */}
+      {/* ── Row 6: Recent orders ─────────────────────────────────────── */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-base">Recent Events</CardTitle>
+          <CardTitle className="text-base">Recent Orders</CardTitle>
           <Button variant="link" size="sm" asChild>
-            <a href="/events">View all</a>
+            <a href="/orders">View all →</a>
           </Button>
         </CardHeader>
-        <CardContent>
-          <EventsTable events={recentEvents} loading={loading} />
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {[0,1,2,3].map((i) => (
+                <div key={i} className="px-6 py-3.5 animate-pulse flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-40 bg-gray-100 dark:bg-gray-800 rounded" />
+                    <div className="h-2.5 w-24 bg-gray-100 dark:bg-gray-800 rounded" />
+                  </div>
+                  <div className="h-4 w-16 bg-gray-100 dark:bg-gray-800 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : recentOrders.length === 0 ? (
+            <div className="py-10 text-center">
+              <p className="text-sm text-gray-400">No orders yet</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {recentOrders.slice(0, 8).map((order) => (
+                <div key={order.id} className="px-6 py-3.5 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-[#D93B2F]/10 flex items-center justify-center text-xs font-bold text-[#D93B2F] flex-shrink-0">
+                    {order.user?.firstName?.[0] ?? "?"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                      {order.user ? `${order.user.firstName} ${order.user.lastName}` : "Unknown"}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {order.event?.title ?? "—"} · {fmtRelative(order.paidAt)}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                      {formatCurrency(Number(order.total))}
+                    </p>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700">
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -118,7 +118,7 @@ export default function EventsPage() {
       {/* Table */}
       <Card>
         <CardContent className="p-6">
-          <EventsTable events={events} loading={loading} />
+          <EventsTable events={events} loading={loading} onRefresh={loadEvents} />
         </CardContent>
       </Card>
 

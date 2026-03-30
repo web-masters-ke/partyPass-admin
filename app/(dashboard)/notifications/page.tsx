@@ -244,7 +244,7 @@ export default function NotificationsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentNotifications.map((n) => (
+              {history.map((n) => (
                 <div
                   key={n.id}
                   className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2"

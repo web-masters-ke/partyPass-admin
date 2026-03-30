@@ -1,24 +1,43 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ChevronRight, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { removeToken } from "@/lib/auth";
+import { removeToken, getToken } from "@/lib/auth";
 import { authApi } from "@/lib/api";
 import Cookies from "js-cookie";
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(base64));
+  } catch { return null; }
+}
 
 const pathLabels: Record<string, string> = {
   dashboard: "Dashboard",
   events: "Events",
   users: "Users",
+  organizers: "Organizers",
+  venues: "Venues",
+  clubs: "Clubs",
+  orders: "Orders",
   finances: "Finances",
+  wallets: "User Wallets",
+  wallet: "Wallet",
+  waitlist: "Waitlist",
+  "waiting-room": "Waiting Room",
+  wristbands: "Wristbands",
+  "venue-portal": "Venue Portal",
   loyalty: "Loyalty",
+  rewards: "Rewards",
+  "promo-codes": "Promo Codes",
+  passes: "Passes",
+  reviews: "Reviews",
   notifications: "Notifications",
   settings: "Settings",
-  clubs: "Clubs",
-  passes: "Passes",
-  "promo-codes": "Promo Codes",
   new: "Create New",
   gate: "Gate Dashboard",
   attendees: "Attendees",
@@ -28,6 +47,17 @@ const pathLabels: Record<string, string> = {
 export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [adminName, setAdminName] = useState("Admin");
+
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      const payload = decodeJwtPayload(token);
+      if (payload?.firstName) {
+        setAdminName(`${payload.firstName}${payload.lastName ? " " + payload.lastName : ""}`);
+      }
+    }
+  }, []);
 
   const segments = pathname.split("/").filter(Boolean);
   const breadcrumbs = segments.map((seg, idx) => ({
@@ -74,7 +104,7 @@ export function Topbar() {
             <User className="h-4 w-4 text-white" />
           </div>
           <span className="hidden text-sm font-medium text-gray-700 dark:text-gray-300 sm:block">
-            Admin
+            {adminName}
           </span>
         </div>
         <Button
