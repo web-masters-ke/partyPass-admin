@@ -19,55 +19,11 @@ interface Club {
   capacity: number;
   upcomingEventsCount: number;
   membershipCount: number;
+  clubNightsCount?: number;
   isActive: boolean;
+  owner?: { id: string; firstName: string; lastName: string; email: string } | null;
 }
 
-const mockClubs: Club[] = [
-  {
-    id: "c1",
-    name: "Altitude The Club",
-    description: "Nairobi's premier rooftop nightclub",
-    city: "Nairobi",
-    address: "Upperhill, Nairobi",
-    capacity: 500,
-    upcomingEventsCount: 4,
-    membershipCount: 234,
-    isActive: true,
-  },
-  {
-    id: "c2",
-    name: "Havana Nairobi",
-    description: "Latin-inspired club and bar",
-    city: "Nairobi",
-    address: "Westlands, Nairobi",
-    capacity: 350,
-    upcomingEventsCount: 2,
-    membershipCount: 148,
-    isActive: true,
-  },
-  {
-    id: "c3",
-    name: "B-Club",
-    description: "Luxury nightclub experience",
-    city: "Nairobi",
-    address: "Karen, Nairobi",
-    capacity: 600,
-    upcomingEventsCount: 6,
-    membershipCount: 412,
-    isActive: true,
-  },
-  {
-    id: "c4",
-    name: "Tamasha",
-    description: "Live music and cocktail bar",
-    city: "Nairobi",
-    address: "Westlands, Nairobi",
-    capacity: 280,
-    upcomingEventsCount: 1,
-    membershipCount: 89,
-    isActive: true,
-  },
-];
 
 export default function ClubsPage() {
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -81,7 +37,7 @@ export default function ClubsPage() {
       const data = unwrap<{ items: Club[] }>(res);
       setClubs(data.items ?? []);
     } catch {
-      setClubs(mockClubs);
+      setClubs([]);
     } finally {
       setLoading(false);
     }
