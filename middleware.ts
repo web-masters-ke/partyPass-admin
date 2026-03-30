@@ -17,7 +17,8 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("partypass_token")?.value;
 
   if (!token && !PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
   }
