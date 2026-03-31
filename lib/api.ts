@@ -183,6 +183,7 @@ export const adminWalletApi = {
     api.post("/admin/wallet/credit", { userId, amount, description }),
   transfer: (fromUserId: string, toUserId: string, amount: number, description?: string) =>
     api.post("/admin/wallet/transfer", { fromUserId, toUserId, amount, description }),
+  voidTx: (txId: string) => api.post(`/admin/wallet/transactions/${txId}/void`),
 };
 
 // Admin Waitlist oversight
