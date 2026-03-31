@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  basePath: process.env.NODE_ENV === "production" ? "/admin" : "",
+  // basePath removed — admin now has its own domain (admin.partypass.co.ke)
   eslint: {
     ignoreDuringBuilds: true,
   },
