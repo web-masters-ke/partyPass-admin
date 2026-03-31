@@ -83,6 +83,7 @@ export default function AdminWalletsPage() {
   const [desc, setDesc] = useState("");
   const [transferTo, setTransferTo] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [voidingTx, setVoidingTx] = useState<string | null>(null);
 
   const loadStats = useCallback(() => {
     setStatsLoading(true);
@@ -132,6 +133,18 @@ export default function AdminWalletsPage() {
     } catch (e: unknown) {
       toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Credit failed");
     } finally { setSubmitting(false); }
+  }
+
+  async function handleVoidTx(txId: string) {
+    if (!confirm("Mark this pending transaction as failed/voided?")) return;
+    setVoidingTx(txId);
+    try {
+      await adminWalletApi.voidTx(txId);
+      toast.success("Transaction voided");
+      loadTxs(); loadStats();
+    } catch (e: unknown) {
+      toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to void");
+    } finally { setVoidingTx(null); }
   }
 
   async function handleTransfer() {
@@ -300,7 +313,7 @@ export default function AdminWalletsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["User", "Type", "Amount", "Status", "Description", "Date"].map(h => (
+                    {["User", "Type", "Amount", "Status", "Description", "Date", ""].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -326,6 +339,14 @@ export default function AdminWalletsPage() {
                         </td>
                         <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{tx.description || "—"}</td>
                         <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDate(tx.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          {tx.status === "PENDING" && (
+                            <button onClick={() => handleVoidTx(tx.id)} disabled={voidingTx === tx.id}
+                              className="px-2 py-1 text-xs font-bold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-40 transition-colors">
+                              {voidingTx === tx.id ? "…" : "Void"}
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
