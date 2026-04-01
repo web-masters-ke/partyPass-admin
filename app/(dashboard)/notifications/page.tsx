@@ -266,13 +266,17 @@ export default function NotificationsPage() {
                         year: "numeric",
                       })}
                     </span>
-                    <span className="text-gray-600 dark:text-gray-400">
-                      <span className="font-medium">{n.delivered.toLocaleString()}</span> delivered
-                    </span>
-                    <span className="text-green-600">
-                      <span className="font-medium">{n.opened.toLocaleString()}</span> opened (
-                      {Math.round((n.opened / n.delivered) * 100)}%)
-                    </span>
+                    {n.delivered != null && (
+                      <span className="text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">{n.delivered.toLocaleString()}</span> delivered
+                      </span>
+                    )}
+                    {n.opened != null && n.delivered != null && (
+                      <span className="text-green-600">
+                        <span className="font-medium">{n.opened.toLocaleString()}</span> opened (
+                        {n.delivered > 0 ? Math.round((n.opened / n.delivered) * 100) : 0}%)
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
